@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relógio — POCKET</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07070e;--surface:#0f0f1a;--card:#161625;--card2:#1c1c2e;
+  --accent:#00d4aa; /* Verde do Relógio */
+  --accent2:#7c6bff;--orange:#ff9f43;--red:#ff6b6b;
+  --text:#eeeef5;--muted:#585878;--border:rgba(42,42,62,0.8);
+  --btn:#1e1e30;--btn-h:#282840;
+}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Ícones Globais */
+.svg-icon{width:1.2rem;height:1.2rem;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.svg-solid{width:1.5rem;height:1.5rem;fill:currentColor;stroke:none;}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-shrink:0;z-index:200;}
+.back{color:var(--muted);text-decoration:none;font-family:'Space Mono',monospace;font-size:.8rem;transition:color .2s;}
+.back:hover{color:var(--accent);}
+.topbar-title{font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:0.5rem;}
+.topbar-title span{color:var(--accent);}
+.now-clock{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--accent);margin-left:auto;letter-spacing:.05em; background:rgba(0, 212, 170, 0.1); padding:0.4rem 0.8rem; border-radius:8px;}
+
+/* TABS */
+.tabs{display:flex;gap:.3rem;flex-wrap:wrap;margin-left:1rem;}
+.tab{padding:.4rem .9rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:.85rem;cursor:pointer;transition:all .2s;}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;}
+.tab:hover:not(.active){background:var(--btn-h);color:var(--text);}
+
+/* MAIN LAYOUT */
+.main{flex:1;display:flex;overflow:hidden;padding:1.5rem;}
+.panel{display:none;flex:1;overflow-y:auto;}
+.panel.active{display:flex;flex-direction:column;gap:1rem;}
+.sec-title{font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.5rem;display:flex;align-items:center;gap:0.5rem;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ────── ALARME ────── */
+.alarm-wrap{max-width:560px;margin:0 auto;width:100%;}
+.clock-display{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:2.5rem;text-align:center;margin-bottom:2rem;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.clock-big{font-family:'Space Mono',monospace;font-size:clamp(3rem,8vw,5.5rem);font-weight:700;color:var(--accent);letter-spacing:.05em;}
+.clock-date{font-size:.9rem;color:var(--muted);font-family:'Space Mono',monospace;margin-top:.5rem;}
+
+.add-alarm{display:flex;gap:.5rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);padding:1rem;border-radius:16px;margin-bottom:1.5rem;}
+.form-input, .form-select{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;color:var(--text);font-family:'Syne',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;}
+.form-input:focus, .form-select:focus{border-color:var(--accent);}
+.add-alarm .form-input{flex:2;min-width:120px;}
+.add-alarm .form-select{flex:1.5;}
+.add-btn{background:var(--accent);border:none;border-radius:8px;padding:.6rem 1rem;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;color:#000;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.add-btn:hover{background:#00f0c0;transform:translateY(-2px);}
+
+.alarm-list{display:flex;flex-direction:column;gap:.6rem;}
+.alarm-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.8rem 1.2rem;display:flex;align-items:center;gap:1rem;transition:transform 0.2s;}
+.alarm-item:hover{border-color:var(--muted);}
+.alarm-time{font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--text);}
+.alarm-label{flex:1;font-size:.9rem;color:var(--muted);display:flex;flex-direction:column;gap:0.2rem;}
+.alarm-label span{font-size:.7rem;opacity:.7;}
+
+/* Toggle Switch */
+.toggle{position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--btn-h);border-radius:13px;cursor:pointer;transition:.3s;}
+.slider::before{content:'';position:absolute;height:18px;width:18px;left:4px;bottom:4px;background:#fff;border-radius:50%;transition:.3s;}
+input:checked+.slider{background:var(--accent);}
+input:checked+.slider::before{transform:translateX(22px);}
+
+.alarm-del{background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0.5rem;transition:all .2s;}
+.alarm-del:hover{color:var(--red);border-color:var(--red);background:rgba(255,107,107,0.1);}
+
+.ring-btn{background:var(--red);border:none;border-radius:12px;padding:.8rem 1.2rem;color:#fff;cursor:pointer;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;animation:pulse 1.5s infinite;display:flex;align-items:center;justify-content:center;gap:0.5rem;width:100%;box-shadow:0 10px 20px rgba(255,107,107,0.3);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.8;box-shadow:0 0 25px rgba(255,107,107,0.6);}}
+
+/* ────── CRONÔMETRO ────── */
+.sw-wrap{max-width:500px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:1.5rem;}
+.sw-display{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:3rem 2rem;text-align:center;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.sw-time{font-family:'Space Mono',monospace;font-size:clamp(3.5rem,8vw,6rem);font-weight:700;color:var(--text);letter-spacing:.05em;}
+.sw-time .sw-ms{font-size:.45em;color:var(--muted);}
+
+.sw-btns{display:flex;gap:1rem;}
+.sw-btn{background:var(--btn);border:1px solid var(--border);border-radius:50%;width:72px;height:72px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .2s;box-shadow:0 4px 10px rgba(0,0,0,0.2);}
+.sw-btn:hover{background:var(--btn-h);transform:scale(1.05);}
+.sw-btn:active{transform:scale(0.95);}
+.sw-btn.green{background:var(--accent);border-color:var(--accent);color:#000;}
+.sw-btn.red{background:var(--red);border-color:var(--red);color:#fff;}
+
+.laps{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;width:100%;max-height:300px;overflow-y:auto;box-shadow:inset 0 2px 10px rgba(0,0,0,0.1);}
+.lap-item{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px dashed var(--border);font-family:'Space Mono',monospace;font-size:.9rem;color:var(--text);}
+.lap-item:last-child{border:none;}
+
+/* ────── TIMER ────── */
+.timer-wrap{max-width:500px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:1.5rem;}
+.timer-display{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:2.5rem;text-align:center;width:100%;position:relative;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.timer-ring{position:relative;width:240px;height:240px;margin:0 auto 1.5rem;}
+.timer-ring svg{transform:rotate(-90deg);width:240px;height:240px;}
+.timer-ring circle{fill:none;stroke-width:6;}
+.timer-ring .bg{stroke:var(--card2);}
+.timer-ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
+.timer-time{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:3rem;font-weight:700;}
+
+.timer-inputs{display:flex;gap:.5rem;align-items:center;justify-content:center;}
+.timer-inputs input{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.6rem;width:70px;font-family:'Space Mono',monospace;font-size:1.2rem;color:var(--text);text-align:center;outline:none;transition:border-color 0.2s;}
+.timer-inputs input:focus{border-color:var(--accent);}
+.timer-inputs span{color:var(--muted);font-family:'Space Mono',monospace;font-size:1.2rem;}
+
+.timer-presets{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;width:100%;}
+.t-preset{background:var(--btn);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;font-size:.85rem;cursor:pointer;color:var(--muted);transition:all .2s;font-family:'Space Mono',monospace;}
+.t-preset:hover{background:var(--accent);color:#000;border-color:var(--accent);}
+
+/* ────── TIMEZONE ────── */
+.tz-wrap{max-width:800px;margin:0 auto;width:100%;}
+.tz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem;margin-bottom:1.5rem;}
+.tz-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.5rem;position:relative;transition:transform 0.2s;box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+.tz-card:hover{transform:translateY(-3px);border-color:var(--muted);}
+.tz-card .tz-name{display:flex;align-items:center;gap:0.4rem;font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.1em;}
+.tz-card .tz-city{font-size:1rem;font-weight:700;margin:.4rem 0;}
+.tz-card .tz-time{font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--accent);}
+.tz-card .tz-date{font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;margin-top:0.2rem;}
+.tz-card .tz-del{position:absolute;top:.8rem;right:.8rem;background:var(--card2);border:1px solid transparent;border-radius:6px;color:var(--muted);cursor:pointer;display:flex;align-items:center;padding:0.3rem;transition:all 0.2s;}
+.tz-card .tz-del:hover{color:var(--red);border-color:var(--red);background:rgba(255,107,107,0.1);}
+.tz-card.local{border-color:var(--accent);box-shadow:0 0 15px rgba(0,212,170,0.15);}
+.tz-diff{font-size:.75rem;color:var(--orange);font-family:'Space Mono',monospace;margin-top:.5rem;}
+
+.add-tz{display:flex;gap:.5rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
+.tz-search-wrap{position:relative;flex:1;}
+.tz-search{width:100%;}
+.tz-suggestions{position:absolute;z-index:50;background:var(--card2);border:1px solid var(--border);border-radius:8px;width:100%;max-height:200px;overflow-y:auto;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.5);top:calc(100% + 5px);}
+.tz-suggestions div{padding:.8rem 1rem;cursor:pointer;font-size:.9rem;transition:background .15s;border-bottom:1px solid var(--border);}
+.tz-suggestions div:last-child{border-bottom:none;}
+.tz-suggestions div:hover{background:var(--btn-h);}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html" class="back">← POCKET</a>
+  <div class="topbar-title">
+    <svg class="svg-icon" viewBox="0 0 24 24" style="stroke:var(--accent);">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>Relógio</span>
+  </div>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="switchPanel('alarm')">Alarme</button>
+    <button class="tab" onclick="switchPanel('stopwatch')">Cronômetro</button>
+    <button class="tab" onclick="switchPanel('timer')">Timer</button>
+    <button class="tab" onclick="switchPanel('timezone')">Fuso Horário</button>
+  </div>
+
+  <div class="now-clock" id="topClock">00:00:00</div>
+</div>
+
+<div class="main">
+
+<div class="panel active" id="panel-alarm">
+  <div class="alarm-wrap">
+    <div class="clock-display">
+      <div class="clock-big" id="alarmClock">00:00:00</div>
+      <div class="clock-date" id="alarmDate"></div>
+    </div>
+    
+    <div id="ring-alert" style="display:none;margin-bottom:1.5rem;">
+      <button class="ring-btn" onclick="stopRing()">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        ALARME DISPARADO — Toque para parar
+      </button>
+    </div>
+
+    <div class="add-alarm">
+      <input class="form-input" type="time" id="new-alarm-time" placeholder="00:00" style="font-family:'Space Mono', monospace;">
+      <input class="form-input" type="text" id="new-alarm-label" placeholder="Nome do alarme...">
+      <select class="form-select" id="new-alarm-repeat">
+        <option value="once">Uma vez</option>
+        <option value="daily">Diário</option>
+        <option value="weekdays">Dias úteis</option>
+        <option value="weekends">Fins de semana</option>
+      </select>
+      <button class="add-btn" onclick="addAlarm()" title="Adicionar Alarme">
+        <svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+    </div>
+
+    <div class="sec-title">Seus Alarmes</div>
+    <div class="alarm-list" id="alarm-list"></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-stopwatch">
+  <div class="sw-wrap">
+    <div class="sw-display">
+      <div class="sw-time" id="sw-time">00:00<span class="sw-ms">.00</span></div>
+    </div>
+    <div class="sw-btns">
+      <button class="sw-btn" onclick="swLap()" title="Marcar Volta">
+        <svg class="svg-icon" viewBox="0 0 24 24" style="width:1.8rem;height:1.8rem;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+      </button>
+      <button class="sw-btn green" id="sw-start-btn" onclick="swToggle()" title="Iniciar/Pausar">
+        <svg class="svg-solid" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      </button>
+      <button class="sw-btn red" onclick="swReset()" title="Zerar">
+        <svg class="svg-solid" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>
+      </button>
+    </div>
+    <div class="laps" id="sw-laps" style="display:none"></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-timer">
+  <div class="timer-wrap">
+    <div class="timer-display">
+      <div class="timer-ring">
+        <svg viewBox="0 0 240 240"><circle class="bg" cx="120" cy="120" r="110"/><circle class="fg" id="timer-arc" cx="120" cy="120" r="110" stroke-dasharray="691" stroke-dashoffset="0"/></svg>
+        <div class="timer-time" id="timer-display">00:00</div>
+      </div>
+      <div class="timer-inputs">
+        <input type="number" id="t-h" min="0" max="23" value="0" placeholder="00">
+        <span>:</span>
+        <input type="number" id="t-m" min="0" max="59" value="5" placeholder="00">
+        <span>:</span>
+        <input type="number" id="t-s" min="0" max="59" value="0" placeholder="00">
+      </div>
+    </div>
+    <div class="timer-presets">
+      <button class="t-preset" onclick="setTimer(1,0,0)">1h</button>
+      <button class="t-preset" onclick="setTimer(0,30,0)">30m</button>
+      <button class="t-preset" onclick="setTimer(0,15,0)">15m</button>
+      <button class="t-preset" onclick="setTimer(0,10,0)">10m</button>
+      <button class="t-preset" onclick="setTimer(0,5,0)">5m</button>
+      <button class="t-preset" onclick="setTimer(0,3,0)">3m</button>
+      <button class="t-preset" onclick="setTimer(0,1,0)">1m</button>
+      <button class="t-preset" onclick="setTimer(0,0,30)">30s</button>
+    </div>
+    <div class="sw-btns" style="margin-top:0.5rem;">
+      <button class="sw-btn green" id="timer-start-btn" onclick="timerToggle()">
+        <svg class="svg-solid" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      </button>
+      <button class="sw-btn red" onclick="timerReset()">
+        <svg class="svg-solid" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>
+      </button>
+    </div>
+    <div id="timer-ring-alert" style="display:none;margin-top:1rem; width:100%;">
+      <button class="ring-btn" onclick="stopTimerRing()">
+        <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        TEMPO ESGOTADO — Toque para parar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-timezone">
+  <div class="tz-wrap">
+    <div class="sec-title">Cidades Globais</div>
+    <div class="tz-grid" id="tz-grid"></div>
+    
+    <div class="add-tz">
+      <div class="tz-search-wrap">
+        <input class="form-input tz-search" id="tz-search" placeholder="Adicionar cidade ou fuso (ex: Nova York, Tóquio)..." oninput="tzSearch()">
+        <div class="tz-suggestions" id="tz-suggestions"></div>
+      </div>
+      <button class="add-btn" onclick="addTzFromInput()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+</div><script>
+/* Ícones em SVG para uso no JS */
+const playSVG = '<svg class="svg-solid" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+const pauseSVG = '<svg class="svg-solid" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+const trashSVG = '<svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+const pinSVG = '<svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>';
+const xSVG = '<svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
+/* ════════════════ AUDIO CONTEXT ════════════════ */
+let audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function beep(freq=880,dur=0.3,vol=0.4,type='sine'){
+  const ctx=getAudio();
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);
+  o.frequency.value=freq;o.type=type;
+  g.gain.setValueAtTime(vol,ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+  o.start();o.stop(ctx.currentTime+dur);
+}
+function alarmSound(){
+  const p=[880,988,1047,988,880,0,880,988,1047,988,880];
+  let t=0;
+  p.forEach((f,i)=>{setTimeout(()=>{if(f>0)beep(f,.2,.5,'square');},t);t+=150;});
+}
+function timerBeep(){
+  [880,1100,1320,1100,880,1100,1320].forEach((f,i)=>setTimeout(()=>beep(f,.25,.5,'triangle'),i*200));
+}
+
+/* ════════════════ LOCAL STORAGE ════════════════ */
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function loadLS(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
+
+/* ════════════════ PANEL SWITCHING ════════════════ */
+function switchPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+/* ════════════════ RELÓGIO GLOBAL & ALARMES ════════════════ */
+let alarms=loadLS('suite_alarms',[]);
+let ringing=false;let ringInterval=null;
+
+function updateTopClock(){
+  const n=new Date();
+  document.getElementById('topClock').textContent=n.toLocaleTimeString('pt-BR');
+  document.getElementById('alarmClock').textContent=n.toLocaleTimeString('pt-BR');
+  document.getElementById('alarmDate').textContent=n.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  checkAlarms(n);
+}
+setInterval(updateTopClock,1000);updateTopClock();
+
+function checkAlarms(now){
+  const hh=String(now.getHours()).padStart(2,'0');
+  const mm=String(now.getMinutes()).padStart(2,'0');
+  const ss=now.getSeconds();
+  if(ss!==0)return;
+  const t=`${hh}:${mm}`;
+  const day=now.getDay();
+  alarms.forEach(a=>{
+    if(!a.on)return;
+    if(a.time!==t)return;
+    if(a.repeat==='once'||a.repeat==='daily')ringAlarm();
+    if(a.repeat==='weekdays'&&day>=1&&day<=5)ringAlarm();
+    if(a.repeat==='weekends'&&(day===0||day===6))ringAlarm();
+  });
+}
+function ringAlarm(){
+  if(ringing)return;
+  ringing=true;
+  document.getElementById('ring-alert').style.display='block';
+  ringInterval=setInterval(alarmSound,2000);
+  alarmSound();
+}
+function stopRing(){
+  ringing=false;clearInterval(ringInterval);
+  document.getElementById('ring-alert').style.display='none';
+}
+function addAlarm(){
+  const t=document.getElementById('new-alarm-time').value;
+  if(!t)return;
+  alarms.push({id:Date.now(),time:t,label:document.getElementById('new-alarm-label').value||'Alarme',repeat:document.getElementById('new-alarm-repeat').value,on:true});
+  saveLS('suite_alarms',alarms);renderAlarms();
+  document.getElementById('new-alarm-time').value='';document.getElementById('new-alarm-label').value='';
+  beep(880,.15);
+}
+function toggleAlarm(id){
+  const a=alarms.find(x=>x.id===id);if(a)a.on=!a.on;
+  saveLS('suite_alarms',alarms);renderAlarms();
+}
+function deleteAlarmItem(id){alarms=alarms.filter(x=>x.id!==id);saveLS('suite_alarms',alarms);renderAlarms();}
+function renderAlarms(){
+  const list=document.getElementById('alarm-list');
+  if(!alarms.length){list.innerHTML=`<div style="color:var(--muted);font-size:.9rem;padding:1rem 0;text-align:center;">Nenhum alarme cadastrado.</div>`;return;}
+  
+  // Como o alarme pode vir do calendário (onde usamos o ícone de raio dinâmico), parseamos corretamente caso ele já contenha um SVG em texto puro (da versão anterior).
+  // Nesta versão nova evitamos interpolar SVGs diretos no 'label' no banco, mas mostramos o texto normal.
+  list.innerHTML=alarms.map(a=>{
+    let displayLabel = a.label;
+    // Fallback pra limpar SVGs velhos injetados da versão anterior
+    if(displayLabel.includes('<svg')) displayLabel = displayLabel.replace(/<svg[^>]*>.*?<\/svg>/g, '⚡').trim();
+    
+    return `
+    <div class="alarm-item">
+      <div class="alarm-time">${a.time}</div>
+      <div class="alarm-label">
+        ${displayLabel}
+        <span>${{once:'Uma vez',daily:'Todos os dias',weekdays:'Dias úteis',weekends:'Fins de semana'}[a.repeat]}</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${a.on?'checked':''} onchange="toggleAlarm(${a.id})">
+        <span class="slider"></span>
+      </label>
+      <button class="alarm-del" onclick="deleteAlarmItem(${a.id})" title="Excluir Alarme">${trashSVG}</button>
+    </div>`
+  }).join('');
+}
+renderAlarms();
+
+/* ════════════════ CRONÔMETRO ════════════════ */
+let swRunning=false,swStart=0,swElapsed=0,swInterval=null,swLaps=[];
+function swToggle(){
+  if(swRunning){
+    clearInterval(swInterval);swElapsed+=Date.now()-swStart;swRunning=false;
+    document.getElementById('sw-start-btn').innerHTML = playSVG;
+    document.getElementById('sw-start-btn').className='sw-btn green';
+  } else {
+    swStart=Date.now();swRunning=true;
+    swInterval=setInterval(swTick,37);
+    document.getElementById('sw-start-btn').innerHTML = pauseSVG;
+    document.getElementById('sw-start-btn').className='sw-btn';
+  }
+}
+function swTick(){
+  const total=swElapsed+(Date.now()-swStart);
+  const ms=Math.floor(total/10)%100;
+  const s=Math.floor(total/1000)%60;
+  const m=Math.floor(total/60000)%60;
+  const h=Math.floor(total/3600000);
+  const disp=h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}<span class="sw-ms">.${String(ms).padStart(2,'0')}</span>`
+    :`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}<span class="sw-ms">.${String(ms).padStart(2,'0')}</span>`;
+  document.getElementById('sw-time').innerHTML=disp;
+}
+function swReset(){
+  clearInterval(swInterval);swRunning=false;swElapsed=0;swLaps=[];
+  document.getElementById('sw-time').innerHTML=`00:00<span class="sw-ms">.00</span>`;
+  document.getElementById('sw-start-btn').innerHTML = playSVG;
+  document.getElementById('sw-start-btn').className='sw-btn green';
+  document.getElementById('sw-laps').style.display='none';
+  document.getElementById('sw-laps').innerHTML='';
+}
+function swLap(){
+  if(!swRunning&&swElapsed===0)return;
+  const total=swElapsed+(swRunning?Date.now()-swStart:0);
+  const ms=Math.floor(total/10)%100;
+  const s=Math.floor(total/1000)%60;
+  const m=Math.floor(total/60000)%60;
+  const lapTime=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(2,'0')}`;
+  swLaps.push(lapTime);
+  const lapsEl=document.getElementById('sw-laps');
+  lapsEl.style.display='block';
+  lapsEl.innerHTML=swLaps.map((l,i)=>`<div class="lap-item"><span>Volta ${i+1}</span><span>${l}</span></div>`).reverse().join('');
+  beep(1100,.05,.3);
+}
+
+/* ════════════════ TIMER ════════════════ */
+let timerTotal=0,timerLeft=0,timerInterval=null,timerRunning=false;
+function setTimer(h,m,s){
+  timerTotal=h*3600+m*60+s;timerLeft=timerTotal;
+  document.getElementById('t-h').value=h;document.getElementById('t-m').value=m;document.getElementById('t-s').value=s;
+  updateTimerDisplay();if(timerRunning)timerReset();
+}
+function getTimerInput(){
+  const h=parseInt(document.getElementById('t-h').value)||0;
+  const m=parseInt(document.getElementById('t-m').value)||0;
+  const s=parseInt(document.getElementById('t-s').value)||0;
+  return h*3600+m*60+s;
+}
+function timerToggle(){
+  if(timerRunning){
+    clearInterval(timerInterval);timerRunning=false;
+    document.getElementById('timer-start-btn').innerHTML = playSVG;
+    document.getElementById('timer-start-btn').className='sw-btn green';
+  } else {
+    if(timerLeft===0){timerTotal=getTimerInput();timerLeft=timerTotal;}
+    if(timerLeft===0)return;
+    timerRunning=true;
+    document.getElementById('timer-start-btn').innerHTML = pauseSVG;
+    document.getElementById('timer-start-btn').className='sw-btn';
+    timerInterval=setInterval(()=>{
+      timerLeft--;updateTimerDisplay();
+      if(timerLeft<=0){clearInterval(timerInterval);timerRunning=false;
+        document.getElementById('timer-start-btn').innerHTML = playSVG;
+        document.getElementById('timer-start-btn').className='sw-btn green';
+        document.getElementById('timer-ring-alert').style.display='block';
+        let ti=setInterval(timerBeep,3000);timerBeep();
+        window._timerAlertInt=ti;
+      }
+    },1000);
+  }
+}
+function stopTimerRing(){document.getElementById('timer-ring-alert').style.display='none';clearInterval(window._timerAlertInt);}
+function timerReset(){
+  clearInterval(timerInterval);timerRunning=false;timerLeft=timerTotal;
+  document.getElementById('timer-start-btn').innerHTML = playSVG;
+  document.getElementById('timer-start-btn').className='sw-btn green';
+  updateTimerDisplay();
+}
+function updateTimerDisplay(){
+  const t=timerLeft>=0?timerLeft:0;
+  const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;
+  const disp=h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('timer-display').textContent=disp;
+  const total=timerTotal||1;
+  const pct=timerLeft/total;
+  const circ=691; /* 2 * PI * r (r=110) */
+  document.getElementById('timer-arc').style.strokeDashoffset=circ*(1-pct);
+  document.getElementById('timer-arc').style.stroke=pct<.25?'var(--red)':pct<.5?'var(--orange)':'var(--accent)';
+}
+setTimer(0,5,0);
+
+/* ════════════════ FUSO HORÁRIO ════════════════ */
+const TZ_LIST=[
+  {city:'São Paulo',tz:'America/Sao_Paulo'},{city:'Nova York',tz:'America/New_York'},
+  {city:'Londres',tz:'Europe/London'},{city:'Paris',tz:'Europe/Paris'},
+  {city:'Tóquio',tz:'Asia/Tokyo'},{city:'Dubai',tz:'Asia/Dubai'},
+  {city:'Sydney',tz:'Australia/Sydney'},{city:'Los Angeles',tz:'America/Los_Angeles'},
+  {city:'Berlim',tz:'Europe/Berlin'},{city:'Moscou',tz:'Europe/Moscow'},
+  {city:'Cingapura',tz:'Asia/Singapore'},{city:'Xangai',tz:'Asia/Shanghai'},
+  {city:'Mumbai',tz:'Asia/Kolkata'},{city:'Cairo',tz:'Africa/Cairo'},
+  {city:'Toronto',tz:'America/Toronto'},{city:'Chicago',tz:'America/Chicago'},
+  {city:'Seul',tz:'Asia/Seoul'},{city:'Cidade do México',tz:'America/Mexico_City'},
+  {city:'Buenos Aires',tz:'America/Argentina/Buenos_Aires'},{city:'Joanesburgo',tz:'Africa/Johannesburg'},
+  {city:'Nairóbi',tz:'Africa/Nairobi'},{city:'Jacarta',tz:'Asia/Jakarta'},
+  {city:'Karachi',tz:'Asia/Karachi'},{city:'Bangkok',tz:'Asia/Bangkok'},
+  {city:'Lisboa',tz:'Europe/Lisbon'},{city:'Amsterdã',tz:'Europe/Amsterdam'},
+  {city:'Roma',tz:'Europe/Rome'},{city:'Madri',tz:'Europe/Madrid'},
+  {city:'Estocolmo',tz:'Europe/Stockholm'},{city:'Auckland',tz:'Pacific/Auckland'},
+];
+let tzList=loadLS('suite_tz',['America/Sao_Paulo','America/New_York','Europe/London','Asia/Tokyo']);
+
+function getTzCity(tz){return TZ_LIST.find(t=>t.tz===tz)?.city||tz;}
+function getTzTime(tz){
+  try{return new Date().toLocaleString('pt-BR',{timeZone:tz,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}catch(e){return '--:--:--';}
+}
+function getTzDate(tz){
+  try{return new Date().toLocaleDateString('pt-BR',{timeZone:tz,weekday:'short',day:'numeric',month:'short'});}catch(e){return '';}
+}
+function getTzOffset(tz){
+  try{
+    const n=new Date();
+    const local=new Date(n.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));
+    const remote=new Date(n.toLocaleString('en-US',{timeZone:tz}));
+    const diff=(remote-local)/3600000;
+    if(diff===0)return '';
+    return `${diff>0?'+':''}${diff}h em relação a SP`;
+  }catch(e){return '';}
+}
+function renderTz(){
+  const grid=document.getElementById('tz-grid');
+  grid.innerHTML=tzList.map((tz,i)=>`
+    <div class="tz-card${i===0?' local':''}">
+      <div class="tz-name">${i===0?`${pinSVG} Local`:tz}</div>
+      <div class="tz-city">${getTzCity(tz)}</div>
+      <div class="tz-time" id="tz-t-${i}">${getTzTime(tz)}</div>
+      <div class="tz-date">${getTzDate(tz)}</div>
+      ${i>0?`<div class="tz-diff">${getTzOffset(tz)}</div>`:'' }
+      ${i>0?`<button class="tz-del" onclick="removeTz('${tz}')" title="Remover">${xSVG}</button>`:''}
+    </div>`).join('');
+}
+function updateTzTimes(){
+  tzList.forEach((tz,i)=>{
+    const el=document.getElementById('tz-t-'+i);
+    if(el)el.textContent=getTzTime(tz);
+  });
+}
+setInterval(updateTzTimes,1000);
+function removeTz(tz){tzList=tzList.filter(t=>t!==tz);saveLS('suite_tz',tzList);renderTz();}
+function addTzFromInput(){
+  const q=document.getElementById('tz-search').value.trim();
+  const found=TZ_LIST.find(t=>t.city.toLowerCase()===q.toLowerCase()||t.tz.toLowerCase()===q.toLowerCase());
+  if(found&&!tzList.includes(found.tz)){tzList.push(found.tz);saveLS('suite_tz',tzList);renderTz();document.getElementById('tz-search').value='';document.getElementById('tz-suggestions').style.display='none';}
+}
+function tzSearch(){
+  const q=document.getElementById('tz-search').value.toLowerCase();
+  const sug=document.getElementById('tz-suggestions');
+  if(!q){sug.style.display='none';return;}
+  const matches=TZ_LIST.filter(t=>t.city.toLowerCase().includes(q)||t.tz.toLowerCase().includes(q));
+  if(!matches.length){sug.style.display='none';return;}
+  sug.innerHTML=matches.slice(0,8).map(t=>`<div onclick="selectTz('${t.tz}','${t.city}')">${t.city} <span style="color:var(--muted);font-size:.75rem">${t.tz}</span></div>`).join('');
+  sug.style.display='block';
+}
+function selectTz(tz,city){
+  if(!tzList.includes(tz)){tzList.push(tz);saveLS('suite_tz',tzList);renderTz();}
+  document.getElementById('tz-search').value=city;
+  document.getElementById('tz-suggestions').style.display='none';
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.add-tz'))document.getElementById('tz-suggestions').style.display='none';});
+renderTz();
+
+</script>
+</body>
+</html>

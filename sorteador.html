@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorteador — POCKET</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--card:#1a1a26;--card2:#1f1f30;
+  --accent:#00a8ff; /* Azul Ciano do Sorteador */
+  --accent-glow:rgba(0,168,255,0.4);
+  --text:#f0f0f5;--muted:#8a8aab;--border:rgba(42,42,62,0.8);
+  --btn:#22223a;--btn-h:#2e2e4a;--green:#00d4aa;
+}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+
+/* Fundo Flutuante Consistente */
+.bg-grid {position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;animation:float 10s ease-in-out infinite;}
+.orb1{width:400px;height:400px;background:rgba(0,168,255,0.15);top:-100px;right:-100px;}
+.orb2{width:350px;height:350px;background:rgba(124,107,255,0.1);bottom:-100px;left:-50px;animation-delay:-4s;}
+@keyframes float {0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-30px) scale(1.05);}}
+
+/* Ícones Globais */
+.svg-icon{width:1.2rem;height:1.2rem;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* TOPBAR */
+.topbar{background:rgba(18,18,26,0.8);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-shrink:0;z-index:200;}
+.back{color:var(--muted);text-decoration:none;font-family:'Space Mono',monospace;font-size:.8rem;transition:color .2s;}
+.back:hover{color:var(--accent);}
+.topbar-title{font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:0.5rem;}
+.topbar-title span{color:var(--accent);text-shadow:0 0 10px var(--accent-glow);}
+
+/* TABS */
+.tabs{display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto;}
+.tab{padding:.4rem .9rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:.85rem;cursor:pointer;transition:all .3s ease;}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;box-shadow:0 0 15px var(--accent-glow);}
+.tab:hover:not(.active){background:var(--btn-h);color:var(--text);transform:translateY(-1px);}
+
+/* MAIN LAYOUT */
+.main{flex:1;display:flex;overflow:hidden;padding:1.5rem;z-index:10;perspective:1000px;}
+.panel{display:none;flex:1;overflow-y:auto;align-items:center;flex-direction:column;animation:fadeIn 0.4s ease-out forwards;}
+.panel.active{display:flex;gap:1.5rem;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px) translateZ(-50px);}to{opacity:1;transform:translateY(0) translateZ(0);}}
+
+.wrap-box{width:100%;max-width:500px;background:rgba(22,22,37,0.7);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:24px;padding:2.5rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem;box-shadow:0 15px 35px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);transform-style:preserve-3d;}
+
+/* CONTROLES GERAIS */
+.form-input, .form-select{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--text);font-family:'Space Mono',monospace;font-size:1rem;outline:none;width:100%;transition:all .3s;}
+.form-input:focus, .form-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,168,255,0.15);}
+.add-btn{background:linear-gradient(135deg, #00a8ff, #0077ff);border:none;border-radius:12px;padding:1rem 1.5rem;font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;color:#000;cursor:pointer;transition:all .2s cubic-bezier(0.34, 1.56, 0.64, 1);display:flex;align-items:center;justify-content:center;gap:0.6rem;width:100%;box-shadow:0 6px 20px var(--accent-glow), inset 0 -3px 0 rgba(0,0,0,0.2);}
+.add-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 10px 25px var(--accent-glow), inset 0 -3px 0 rgba(0,0,0,0.2);}
+.add-btn:active{transform:translateY(2px);box-shadow:0 2px 10px var(--accent-glow), inset 0 0px 0 rgba(0,0,0,0.2);}
+
+/* ────── CARA OU COROA 3D ────── */
+.coin-wrapper{position:relative;margin:2rem 0;display:flex;flex-direction:column;align-items:center;}
+.coin-shadow{position:absolute;bottom:-20px;width:80px;height:15px;background:rgba(0,0,0,0.6);border-radius:50%;filter:blur(5px);transition:all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+.coin-container{perspective:1000px;width:160px;height:160px;}
+.coin{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+.coin-face{position:absolute;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;backface-visibility:hidden;border:6px solid #2a2a3e;box-shadow:inset 0 0 30px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.5);}
+.coin-front{background:linear-gradient(135deg, #1c1c2e, #0a0a0f);color:var(--accent);text-shadow:0 0 15px var(--accent-glow);}
+.coin-back{background:linear-gradient(135deg, #00a8ff, #0055ff);color:#000;transform:rotateY(180deg);border-color:#0077ff;}
+/* A espessura da moeda usando pseudo-elementos */
+.coin-front::after, .coin-back::after{content:'';position:absolute;inset:-6px;border-radius:50%;box-shadow:inset 0 0 10px rgba(255,255,255,0.2);pointer-events:none;}
+
+.coin.flipping-heads{animation: flipHeads 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+.coin.flipping-tails{animation: flipTails 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+.coin-shadow.shrinking{animation: shadowShrink 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+
+@keyframes flipHeads {
+  0% { transform: translateZ(0) rotateY(0); }
+  50% { transform: translateZ(200px) rotateY(900deg) scale(1.2); }
+  100% { transform: translateZ(0) rotateY(1800deg) scale(1); }
+}
+@keyframes flipTails {
+  0% { transform: translateZ(0) rotateY(0); }
+  50% { transform: translateZ(200px) rotateY(990deg) scale(1.2); }
+  100% { transform: translateZ(0) rotateY(1980deg) scale(1); }
+}
+@keyframes shadowShrink {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(0.4); opacity: 0.2; }
+}
+
+.result-text{font-family:'Space Mono',monospace;font-size:1.6rem;color:var(--text);height:2.4rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;text-shadow:0 0 10px rgba(255,255,255,0.2);}
+
+/* ────── DADOS HOLOGRÁFICOS 3D ────── */
+.dice-grid{display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-bottom:1rem;min-height:100px;perspective:800px;}
+.dice-box{width:80px;height:80px;background:linear-gradient(145deg, rgba(28,28,46,0.9), rgba(10,10,15,0.9));border:2px solid rgba(0,168,255,0.5);border-radius:18px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:2.5rem;font-weight:800;color:var(--text);text-shadow:0 0 15px var(--accent);box-shadow:0 10px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,168,255,0.2);transform-style:preserve-3d;position:relative;}
+
+.dice-box.rolling { animation: diceRoll3D 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) forwards; }
+@keyframes diceRoll3D {
+  0% { transform: translateZ(0) rotateX(0) rotateY(0) scale(1); opacity:0.8;}
+  50% { transform: translateZ(150px) rotateX(360deg) rotateY(180deg) scale(1.2); border-color:var(--accent); box-shadow:0 25px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,168,255,0.6); color:var(--accent); }
+  100% { transform: translateZ(0) rotateX(720deg) rotateY(360deg) scale(1); opacity:1;}
+}
+
+.dice-controls{display:flex;gap:1rem;width:100%;background:var(--surface);padding:1rem;border-radius:16px;border:1px solid var(--border);}
+.dice-controls > div{flex:1;display:flex;flex-direction:column;gap:0.4rem;}
+.dice-controls label{font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;font-weight:700;}
+
+/* ────── ROLETA 3D (LISTA) ────── */
+.list-area{width:100%;display:flex;flex-direction:column;gap:0.5rem;}
+.list-area textarea{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;color:var(--text);font-family:'Space Mono',monospace;font-size:.95rem;outline:none;resize:vertical;min-height:140px;width:100%;transition:border-color 0.3s;box-shadow:inset 0 4px 10px rgba(0,0,0,0.3);}
+.list-area textarea:focus{border-color:var(--accent);}
+
+.slot-machine{background:linear-gradient(180deg, #0a0a0f 0%, #1c1c2e 50%, #0a0a0f 100%);border:2px solid var(--border);border-radius:16px;width:100%;height:100px;position:relative;overflow:hidden;box-shadow:inset 0 10px 20px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;}
+/* Linha de foco vermelha do caça-níqueis */
+.slot-machine::before{content:'';position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,68,102,0.5);transform:translateY(-50%);z-index:5;box-shadow:0 0 10px rgba(255,68,102,0.8);}
+
+.slot-drum{display:flex;flex-direction:column;align-items:center;transition:transform 3s cubic-bezier(0.15, 0.9, 0.25, 1);transform-style:preserve-3d;}
+.slot-item{height:100px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;transition:color 0.3s;text-align:center;padding:0 1rem;text-shadow:0 2px 4px rgba(0,0,0,0.8);}
+.slot-item.winner{color:var(--accent);text-shadow:0 0 15px var(--accent-glow);}
+
+/* ────── SENHAS MATRIX/GLITCH ────── */
+.pwd-display{background:linear-gradient(135deg, #0f0f1a, #161625);border:2px solid var(--border);border-radius:16px;padding:1.5rem;width:100%;text-align:center;font-family:'Space Mono',monospace;font-size:1.8rem;color:var(--accent);word-break:break-all;position:relative;min-height:95px;display:flex;align-items:center;justify-content:center;letter-spacing:3px;box-shadow:inset 0 0 20px rgba(0,0,0,0.8);transform-style:preserve-3d;transition:transform 0.1s;}
+.pwd-display:active{transform:scale(0.98);}
+
+.copy-btn{position:absolute;top:0.6rem;right:0.6rem;background:var(--btn);border:1px solid var(--border);border-radius:8px;padding:0.5rem;cursor:pointer;color:var(--muted);transition:all 0.2s;}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent);background:rgba(0,168,255,0.1);transform:translateY(-2px);}
+
+.pwd-options{width:100%;display:flex;flex-direction:column;gap:0.8rem;background:var(--surface);padding:1.5rem;border-radius:16px;border:1px solid var(--border);}
+.pwd-slider-wrap{display:flex;flex-direction:column;gap:0.8rem;margin-bottom:1rem;}
+.pwd-slider-header{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:.85rem;color:var(--muted);text-transform:uppercase;font-weight:700;}
+.pwd-slider{width:100%;appearance:none;height:8px;background:var(--btn-h);border-radius:4px;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);}
+.pwd-slider::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg, #00a8ff, #0077ff);cursor:pointer;box-shadow:0 0 10px rgba(0,168,255,0.5);}
+
+.pwd-checkbox{display:flex;align-items:center;justify-content:space-between;background:var(--card2);padding:0.8rem 1rem;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:all 0.2s;}
+.pwd-checkbox:hover{border-color:var(--border);background:var(--btn-h);}
+.pwd-checkbox label{font-size:.9rem;font-family:'Space Mono',monospace;cursor:pointer;flex:1;}
+.toggle{position:relative;display:inline-block;width:48px;height:26px;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:#2a2a3e;border-radius:13px;cursor:pointer;transition:.3s;box-shadow:inset 0 2px 5px rgba(0,0,0,0.5);}
+.slider::before{content:'';position:absolute;height:18px;width:18px;left:4px;bottom:4px;background:#fff;border-radius:50%;transition:.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);box-shadow:0 2px 5px rgba(0,0,0,0.3);}
+input:checked+.slider{background:var(--accent);}
+input:checked+.slider::before{transform:translateX(22px);}
+
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="topbar">
+  <a href="index.html" class="back">← POCKET</a>
+  <div class="topbar-title">
+    <svg class="svg-icon" viewBox="0 0 24 24" style="stroke:var(--accent);">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+    </svg>
+    <span>Sorteador</span>
+  </div>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="switchPanel('coin')">Cara/Coroa</button>
+    <button class="tab" onclick="switchPanel('dice')">Dados 3D</button>
+    <button class="tab" onclick="switchPanel('list')">Roleta</button>
+    <button class="tab" onclick="switchPanel('pwd')">Senhas</button>
+  </div>
+</div>
+
+<div class="main">
+
+<div class="panel active" id="panel-coin">
+  <div class="wrap-box">
+    <div class="result-text" id="coin-result">Aguardando Lançamento</div>
+    
+    <div class="coin-wrapper">
+      <div class="coin-container">
+        <div class="coin" id="coin">
+          <div class="coin-face coin-front">CARA</div>
+          <div class="coin-face coin-back">COROA</div>
+        </div>
+      </div>
+      <div class="coin-shadow" id="coin-shadow"></div>
+    </div>
+    
+    <button class="add-btn" onclick="flipCoin()">
+      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.27l-3.26-1.3"></path></svg>
+      Lançar Moeda
+    </button>
+  </div>
+</div>
+
+<div class="panel" id="panel-dice">
+  <div class="wrap-box">
+    <div class="dice-grid" id="dice-grid">
+      <div class="dice-box">-</div>
+    </div>
+    
+    <div class="dice-controls">
+      <div>
+        <label>Quantidade</label>
+        <input type="number" id="dice-qty" class="form-input" value="1" min="1" max="10">
+      </div>
+      <div>
+        <label>Faces do Dado</label>
+        <select id="dice-faces" class="form-select">
+          <option value="4">D4 (Pirâmide)</option>
+          <option value="6" selected>D6 (Cubo)</option>
+          <option value="8">D8</option>
+          <option value="10">D10</option>
+          <option value="12">D12</option>
+          <option value="20">D20 (Clássico)</option>
+          <option value="100">D100</option>
+        </select>
+      </div>
+    </div>
+    
+    <button class="add-btn" onclick="rollDice()">
+      <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><circle cx="15.5" cy="15.5" r="1.5"></circle><circle cx="15.5" cy="8.5" r="1.5"></circle><circle cx="8.5" cy="15.5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg>
+      Rolar Dados
+    </button>
+  </div>
+</div>
+
+<div class="panel" id="panel-list">
+  <div class="wrap-box">
+    
+    <div class="slot-machine">
+      <div class="slot-drum" id="slot-drum">
+        <div class="slot-item winner">---</div>
+      </div>
+    </div>
+    
+    <div class="list-area">
+      <label style="font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;font-weight:700;">Participantes/Itens (um por linha):</label>
+      <textarea id="list-items" placeholder="Cole a lista aqui...&#10;Ex:&#10;Pizza&#10;Hambúrguer&#10;Sushi&#10;Tacos"></textarea>
+    </div>
+    
+    <button class="add-btn" onclick="spinRoulette()">
+      <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      Girar Roleta
+    </button>
+  </div>
+</div>
+
+<div class="panel" id="panel-pwd">
+  <div class="wrap-box">
+    <div class="pwd-display">
+      <span id="pwd-result">Senh@Aqui!</span>
+      <button class="copy-btn" onclick="copyPwd()" title="Copiar Senha">
+        <svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
+    
+    <div class="pwd-options">
+      <div class="pwd-slider-wrap">
+        <div class="pwd-slider-header">
+          <span>Tamanho:</span>
+          <span id="pwd-len-val" style="color:var(--accent);">16</span>
+        </div>
+        <input type="range" id="pwd-len" class="pwd-slider" min="6" max="32" value="16" oninput="document.getElementById('pwd-len-val').textContent=this.value">
+      </div>
+      
+      <label class="pwd-checkbox">
+        <span>Letras Maiúsculas (A-Z)</span>
+        <div class="toggle"><input type="checkbox" id="pwd-upper" checked><span class="slider"></span></div>
+      </label>
+      <label class="pwd-checkbox">
+        <span>Números (0-9)</span>
+        <div class="toggle"><input type="checkbox" id="pwd-num" checked><span class="slider"></span></div>
+      </label>
+      <label class="pwd-checkbox">
+        <span>Símbolos (!@#$)</span>
+        <div class="toggle"><input type="checkbox" id="pwd-sym" checked><span class="slider"></span></div>
+      </label>
+    </div>
+    
+    <button class="add-btn" onclick="startGlitchPwd()">
+      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+      Gerar Criptografia
+    </button>
+  </div>
+</div>
+
+</div><script>
+/* ════════════════ PANEL SWITCHING ════════════════ */
+function switchPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+/* ════════════════ CARA OU COROA 3D ════════════════ */
+let isFlipping = false;
+function flipCoin() {
+  if(isFlipping) return;
+  isFlipping = true;
+  
+  const coin = document.getElementById('coin');
+  const shadow = document.getElementById('coin-shadow');
+  const resultText = document.getElementById('coin-result');
+  
+  resultText.textContent = "Lançando...";
+  resultText.style.color = "var(--muted)";
+  
+  // Reseta classes
+  coin.className = 'coin';
+  shadow.className = 'coin-shadow';
+  void coin.offsetWidth; // Reflow
+  
+  const isHeads = Math.random() < 0.5;
+  
+  coin.classList.add(isHeads ? 'flipping-heads' : 'flipping-tails');
+  shadow.classList.add('shrinking');
+  
+  setTimeout(() => {
+    resultText.textContent = isHeads ? "Deu CARA!" : "Deu COROA!";
+    resultText.style.color = "var(--text)";
+    isFlipping = false;
+  }, 2500); // Tempo exato da animação CSS
+}
+
+/* ════════════════ DADOS 3D HOLOGRÁFICOS ════════════════ */
+function rollDice() {
+  const qty = parseInt(document.getElementById('dice-qty').value) || 1;
+  const faces = parseInt(document.getElementById('dice-faces').value) || 6;
+  const grid = document.getElementById('dice-grid');
+  
+  grid.innerHTML = '';
+  const safeQty = Math.min(qty, 12); // Max 12 para layout perfeito
+  
+  for(let i=0; i<safeQty; i++) {
+    const div = document.createElement('div');
+    div.className = 'dice-box rolling';
+    div.textContent = '-';
+    div.style.animationDelay = `${i * 0.1}s`;
+    
+    grid.appendChild(div);
+    
+    // Revela o número quando a animação 3D terminar
+    setTimeout(() => {
+      div.textContent = Math.floor(Math.random() * faces) + 1;
+      div.classList.remove('rolling');
+    }, 800 + (i * 100));
+  }
+}
+
+/* ════════════════ ROLETA / SLOT MACHINE ════════════════ */
+let isSpinning = false;
+function spinRoulette() {
+  if(isSpinning) return;
+  
+  const text = document.getElementById('list-items').value;
+  const drum = document.getElementById('slot-drum');
+  
+  const items = text.split('\n').map(i => i.trim()).filter(i => i !== '');
+  if(items.length < 2) {
+    alert("Digite pelo menos 2 opções para sortear!");
+    return;
+  }
+  
+  isSpinning = true;
+  
+  // Limpa o tambor
+  drum.style.transition = 'none';
+  drum.style.transform = `translateY(0px)`;
+  drum.innerHTML = '';
+  
+  // Constrói uma fita longa para o efeito de giro (50 itens falsos)
+  const spins = 40 + Math.floor(Math.random() * 10);
+  const winnerIndex = spins - 3; // Onde vai parar
+  let winnerText = "";
+  
+  for(let i=0; i<spins; i++) {
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+    const el = document.createElement('div');
+    el.className = 'slot-item';
+    el.textContent = randomItem;
+    
+    if(i === winnerIndex) {
+      winnerText = randomItem;
+      el.classList.add('winner');
+    }
+    
+    drum.appendChild(el);
+  }
+  
+  // Ajuste inicial de layout
+  const itemHeight = 100;
+  // A fita precisa começar deslocada para mostrar o primeiro item
+  drum.style.transform = `translateY(${itemHeight * (spins/2)}px)`;
+  void drum.offsetWidth; // Reflow
+  
+  // Inicia o giro
+  drum.style.transition = 'transform 3.5s cubic-bezier(0.15, 0.9, 0.25, 1)';
+  // Calcula o deslocamento para parar no winnerIndex no centro (caça-níqueis tem 100px altura, então alinhar)
+  const finalPos = -((winnerIndex * itemHeight) - (itemHeight / 2) + 50); 
+  
+  drum.style.transform = `translateY(${finalPos}px)`;
+  
+  setTimeout(() => {
+    isSpinning = false;
+    // Opcional: Tocar um som
+  }, 3500);
+}
+
+/* ════════════════ SENHAS GLITCH ════════════════ */
+function startGlitchPwd() {
+  const resultBox = document.getElementById('pwd-result');
+  const length = parseInt(document.getElementById('pwd-len').value) || 16;
+  const useUpper = document.getElementById('pwd-upper').checked;
+  const useNum = document.getElementById('pwd-num').checked;
+  const useSym = document.getElementById('pwd-sym').checked;
+  
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const numbers = "0123456789";
+  const symbols = "!@#$%^&*()_+~|}{[]:;?><,./-=";
+  
+  let chars = lower;
+  if(useUpper) chars += upper;
+  if(useNum) chars += numbers;
+  if(useSym) chars += symbols;
+  
+  if(chars === "") chars = lower; // Fallback
+  
+  // Efeito Matrix / Glitch
+  let iterations = 0;
+  const maxIterations = 20;
+  resultBox.style.color = "var(--muted)";
+  
+  const interval = setInterval(() => {
+    let tempPwd = "";
+    for(let i=0; i<length; i++) {
+      tempPwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    resultBox.textContent = tempPwd;
+    
+    iterations++;
+    if(iterations >= maxIterations) {
+      clearInterval(interval);
+      resultBox.style.color = "var(--accent)";
+      resultBox.style.textShadow = "0 0 15px var(--accent-glow)";
+      // Treme levemente a caixa para dar impacto final
+      const box = document.querySelector('.pwd-display');
+      box.style.transform = "scale(1.02)";
+      setTimeout(()=> box.style.transform = "scale(1)", 100);
+    }
+  }, 40);
+}
+
+function copyPwd() {
+  const pwd = document.getElementById('pwd-result').textContent;
+  if(pwd && pwd !== "Senh@Aqui!") {
+    navigator.clipboard.writeText(pwd).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:var(--green);"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      btn.style.borderColor = "var(--green)";
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.style.borderColor = "var(--border)";
+      }, 1500);
+    });
+  }
+}
+
+// Inicializa a primeira vez sem glitch para não assustar ao abrir a aba
+setTimeout(()=>{
+  document.getElementById('pwd-result').textContent = "PressioneGerar";
+  document.getElementById('pwd-result').style.color = "var(--muted)";
+}, 100);
+
+</script>
+</body>
+</html>

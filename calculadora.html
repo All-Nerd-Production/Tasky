@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora — SUITE</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--card:#1a1a26;--card2:#1f1f30;
+  --accent:#ff6b35;--accent2:#ffaa00;--text:#f0f0f5;--muted:#6b6b8a;
+  --border:#2a2a3e;--btn:#22223a;--btn-h:#2e2e4a;--green:#00d4aa;--red:#ff4466;
+}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;}
+.back{color:var(--muted);text-decoration:none;font-family:'Space Mono',monospace;font-size:.8rem;transition:color .2s;}
+.back:hover{color:var(--accent);}
+.topbar-title{font-weight:700;font-size:1.1rem;color:var(--text);display:flex;align-items:center;}
+.topbar-title span{color:var(--accent);}
+.tabs{display:flex;gap:.3rem;margin-left:auto;flex-wrap:wrap;}
+.tab{padding:.4rem .9rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s;}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tab:hover:not(.active){background:var(--btn-h);color:var(--text);}
+.main{flex:1;display:flex;gap:0;overflow:hidden;height:calc(100vh - 55px);}
+.panel{display:none;flex:1;overflow-y:auto;padding:1.5rem;}
+.panel.active{display:flex;flex-direction:column;}
+
+/* ─── COMUM ─── */
+.calc-wrap{max-width:380px;margin:0 auto;width:100%;}
+.display{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.5rem;margin-bottom:1rem;min-height:110px;display:flex;flex-direction:column;justify-content:flex-end;}
+.display .expr{font-family:'Space Mono',monospace;font-size:.85rem;color:var(--muted);min-height:1.2em;word-break:break-all;text-align:right;}
+.display .result{font-family:'Space Mono',monospace;font-size:2.6rem;font-weight:700;text-align:right;word-break:break-all;line-height:1.1;color:var(--text);}
+.display .result.big{font-size:1.8rem;}
+.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;}
+.key{background:var(--btn);border:1px solid var(--border);border-radius:12px;padding:0;height:60px;font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;user-select:none;}
+.key:active{transform:scale(.95);}
+.key:hover{background:var(--btn-h);}
+.key.op{color:var(--accent);}
+.key.eq{background:var(--accent);color:#fff;border-color:var(--accent);}
+.key.eq:hover{background:#ff8552;}
+.key.fn{color:var(--accent2);font-size:.85rem;}
+.key.clr{color:var(--red);}
+.key.span2{grid-column:span 2;}
+
+/* ─── CIENTÍFICA ─── */
+.sci-wrap{max-width:520px;margin:0 auto;width:100%;}
+.sci-keypad{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem;}
+.key.sm{font-size:.78rem;height:52px;}
+
+/* ─── CONVERSÃO ─── */
+.conv-wrap{max-width:600px;margin:0 auto;width:100%;}
+.conv-categories{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.2rem;}
+.conv-cat{padding:.35rem .8rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.75rem;cursor:pointer;transition:all .2s;font-family:'Syne',sans-serif;}
+.conv-cat.active{background:var(--green);border-color:var(--green);color:#000;font-weight:700;}
+.conv-cat:hover:not(.active){background:var(--btn-h);color:var(--text);}
+.conv-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;}
+.conv-row{display:flex;gap:1rem;align-items:center;margin-bottom:1rem;}
+.conv-field{flex:1;display:flex;flex-direction:column;gap:.4rem;}
+.conv-field label{font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.1em;}
+.conv-input{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:.7rem 1rem;font-family:'Space Mono',monospace;font-size:1.2rem;color:var(--text);outline:none;width:100%;transition:border-color .2s;}
+.conv-input:focus{border-color:var(--green);}
+.conv-select{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:.7rem 1rem;font-family:'Syne',sans-serif;font-size:.9rem;color:var(--text);outline:none;width:100%;cursor:pointer;}
+.swap-btn{background:var(--btn);border:1px solid var(--border);border-radius:10px;padding:.7rem;cursor:pointer;color:var(--text);font-size:1.2rem;transition:all .3s;flex-shrink:0;align-self:flex-end;margin-bottom:.4rem;display:flex;align-items:center;justify-content:center;}
+.swap-btn:hover{background:var(--btn-h);transform:rotate(180deg);}
+.conv-formula{background:var(--card2);border-radius:8px;padding:.6rem 1rem;font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted);margin-top:.5rem;}
+
+/* ─── EQUAÇÕES E BUILDER ─── */
+.eq-wrap{max-width:640px;margin:0 auto;width:100%;}
+.eq-categories{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.2rem;}
+.eq-list{display:grid;gap:.8rem;}
+.eq-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;}
+.eq-card:hover{border-color:var(--accent2);}
+.eq-card.open{border-color:var(--accent2);}
+.eq-header{padding:1rem 1.2rem;display:flex;align-items:center;justify-content:space-between;}
+.eq-name{font-weight:600;font-size:.95rem;}
+.eq-formula{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--accent2);word-break:break-all;max-width:75%;}
+.eq-chevron{color:var(--muted);transition:transform .2s;}
+.eq-card.open .eq-chevron{transform:rotate(180deg);}
+.eq-body{display:none;padding:0 1.2rem 1.2rem;border-top:1px solid var(--border);}
+.eq-card.open .eq-body{display:block;}
+.eq-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.6rem;margin-top:.8rem;}
+.eq-input-group{display:flex;flex-direction:column;gap:.3rem;}
+.eq-input-group label{font-size:.7rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;font-weight:700;}
+.eq-input-group input, .eq-input-group select{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;font-family:'Space Mono',monospace;font-size:0.95rem;color:var(--text);outline:none;width:100%;transition:border-color .2s;}
+.eq-input-group input:focus, .eq-input-group select:focus{border-color:var(--accent2);}
+.eq-calc-btn{margin-top:.8rem;background:var(--accent2);border:none;border-radius:8px;padding:.6rem 1.2rem;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;color:#000;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;}
+.eq-calc-btn:hover{background:#ffcc00;}
+.eq-result{margin-top:.6rem;background:var(--card2);border-radius:8px;padding:.8rem 1rem;font-family:'Space Mono',monospace;font-size:.95rem;color:var(--green);word-break:break-all;border-left:4px solid var(--green);}
+.section-title{font-size:.75rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.8rem;display:flex;align-items:center;gap:0.5rem;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* BUILDER */
+.builder-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:2.5rem;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.b-step{background:var(--surface);border-radius:12px;padding:1.2rem;margin-bottom:1rem;border:1px solid var(--border);}
+.b-step-title{font-size:0.85rem;color:var(--accent2);font-weight:700;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.05em;}
+.b-display-wrap{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;transition:border-color 0.2s;display:flex;align-items:center;}
+.b-display-wrap:focus-within{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(255,170,0,0.1);}
+.b-display-input{background:transparent;border:none;color:var(--accent2);font-family:'Space Mono',monospace;font-size:1.4rem;width:100%;outline:none;}
+.b-display-input::placeholder{color:var(--muted);opacity:0.5;font-size:1.1rem;}
+.b-keypad{display:grid;grid-template-columns:repeat(6,1fr);gap:0.4rem;background:var(--card2);padding:0.8rem;border-radius:12px;border:1px solid var(--border);}
+.b-keypad button{background:var(--btn);border:1px solid var(--border);color:var(--text);padding:0.6rem 0;border-radius:8px;font-family:'Space Mono',monospace;font-size:1rem;cursor:pointer;transition:all 0.1s;}
+.b-keypad button:hover{background:var(--btn-h);transform:translateY(-1px);}
+.b-keypad button:active{transform:translateY(1px);}
+.b-keypad button.op{color:var(--accent);}
+.b-keypad button.func{color:var(--accent2);font-size:0.85rem;}
+.b-var-creation{display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;}
+.b-var-list{display:flex;gap:0.5rem;flex-wrap:wrap;padding-top:1rem;margin-top:1rem;border-top:1px dashed var(--border);}
+.var-pill-wrap{display:inline-flex;align-items:stretch;background:rgba(0,212,170,0.1);border:1px solid var(--green);border-radius:8px;overflow:hidden;transition:transform 0.1s;}
+.var-pill-wrap:hover{transform:scale(1.05);}
+.var-pill{background:none;border:none;color:var(--green);padding:0.4rem 0.8rem;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.9rem;font-weight:700;}
+.var-pill:hover{background:var(--green);color:#000;}
+.var-pill-del{background:none;border:none;border-left:1px solid rgba(0,212,170,0.3);color:var(--red);padding:0 0.5rem;cursor:pointer;}
+.var-pill-del:hover{background:rgba(255,68,102,0.2);}
+.svg-icon{width:1.2rem;height:1.2rem;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html" class="back">← SUITE</a>
+  <div class="topbar-title">
+    <svg class="svg-icon" viewBox="0 0 24 24" style="stroke:var(--accent); margin-right:0.4rem;">
+      <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+      <line x1="8" y1="6" x2="16" y2="6"></line>
+      <line x1="16" y1="14" x2="16" y2="14"></line>
+      <line x1="16" y1="10" x2="16" y2="10"></line>
+      <line x1="16" y1="18" x2="16" y2="18"></line>
+      <line x1="12" y1="14" x2="12" y2="14"></line>
+      <line x1="12" y1="10" x2="12" y2="10"></line>
+      <line x1="12" y1="18" x2="12" y2="18"></line>
+      <line x1="8" y1="14" x2="8" y2="14"></line>
+      <line x1="8" y1="10" x2="8" y2="10"></line>
+      <line x1="8" y1="18" x2="8" y2="18"></line>
+    </svg>
+    <span>Calculadora</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchPanel('comum')">Comum</button>
+    <button class="tab" onclick="switchPanel('cientifica')">Científica</button>
+    <button class="tab" onclick="switchPanel('conversao')">Conversão</button>
+    <button class="tab" onclick="switchPanel('equacoes')">Equações</button>
+  </div>
+</div>
+<div class="main">
+
+<div class="panel active" id="panel-comum">
+<div class="calc-wrap">
+  <div class="display">
+    <div class="expr" id="c-expr"></div>
+    <div class="result" id="c-result">0</div>
+  </div>
+  <div class="keypad">
+    <button class="key fn" onclick="cKey('Math.abs(')">|x|</button>
+    <button class="key fn" onclick="cKey('%')">%</button>
+    <button class="key fn" onclick="cToggleSign()">±</button>
+    <button class="key clr" onclick="cClear()">C</button>
+
+    <button class="key fn" onclick="cKey('Math.sqrt(')">√</button>
+    <button class="key fn" onclick="cKey('**2')">x²</button>
+    <button class="key fn" onclick="cKey('**')">xⁿ</button>
+    <button class="key op" onclick="cKey('÷')">÷</button>
+
+    <button class="key" onclick="cKey('7')">7</button>
+    <button class="key" onclick="cKey('8')">8</button>
+    <button class="key" onclick="cKey('9')">9</button>
+    <button class="key op" onclick="cKey('×')">×</button>
+
+    <button class="key" onclick="cKey('4')">4</button>
+    <button class="key" onclick="cKey('5')">5</button>
+    <button class="key" onclick="cKey('6')">6</button>
+    <button class="key op" onclick="cKey('-')">−</button>
+
+    <button class="key" onclick="cKey('1')">1</button>
+    <button class="key" onclick="cKey('2')">2</button>
+    <button class="key" onclick="cKey('3')">3</button>
+    <button class="key op" onclick="cKey('+')">+</button>
+
+    <button class="key span2" onclick="cKey('0')">0</button>
+    <button class="key" onclick="cKey('.')">.</button>
+    <button class="key eq" onclick="cCalc()">=</button>
+  </div>
+</div>
+</div>
+
+<div class="panel" id="panel-cientifica">
+<div class="sci-wrap">
+  <div class="display">
+    <div class="expr" id="s-expr"></div>
+    <div class="result" id="s-result">0</div>
+  </div>
+  <div class="sci-keypad" id="sci-keypad">
+    <button class="key sm fn" onclick="sKey('Math.sin(')">sin</button>
+    <button class="key sm fn" onclick="sKey('Math.cos(')">cos</button>
+    <button class="key sm fn" onclick="sKey('Math.tan(')">tan</button>
+    <button class="key sm fn" onclick="sKey('Math.log10(')">log</button>
+    <button class="key sm fn" onclick="sKey('Math.log(')">ln</button>
+    <button class="key sm fn" onclick="sKey('Math.asin(')">asin</button>
+    <button class="key sm fn" onclick="sKey('Math.acos(')">acos</button>
+    <button class="key sm fn" onclick="sKey('Math.atan(')">atan</button>
+    <button class="key sm fn" onclick="sKey('10**')">10ˣ</button>
+    <button class="key sm fn" onclick="sKey('Math.exp(')">eˣ</button>
+    <button class="key sm fn" onclick="sKey('Math.sqrt(')">√</button>
+    <button class="key sm fn" onclick="sKey('Math.cbrt(')">∛</button>
+    <button class="key sm fn" onclick="sKey('**2')">x²</button>
+    <button class="key sm fn" onclick="sKey('**3')">x³</button>
+    <button class="key sm fn" onclick="sKey('**')">xⁿ</button>
+    <button class="key sm fn" onclick="sKey('Math.PI')">π</button>
+    <button class="key sm fn" onclick="sKey('Math.E')">e</button>
+    <button class="key sm fn" onclick="sKey('1/')">1/x</button>
+    <button class="key sm fn" onclick="sKey('Math.abs(')">|x|</button>
+    <button class="key sm fn" onclick="sKey('Math.factorial(')">n!</button>
+    <button class="key sm fn" onclick="sKey('(')">( </button>
+    <button class="key sm fn" onclick="sKey(')')"> )</button>
+    <button class="key sm fn" onclick="sKey('%')">mod</button>
+    <button class="key sm fn" onclick="sToggleRad()" id="rad-btn">DEG</button>
+    <button class="key sm clr" onclick="sClear()">C</button>
+    <button class="key sm" onclick="sKey('7')">7</button>
+    <button class="key sm" onclick="sKey('8')">8</button>
+    <button class="key sm" onclick="sKey('9')">9</button>
+    <button class="key sm clr" onclick="sDel()">⌫</button>
+    <button class="key sm op" onclick="sKey('÷')">÷</button>
+    <button class="key sm" onclick="sKey('4')">4</button>
+    <button class="key sm" onclick="sKey('5')">5</button>
+    <button class="key sm" onclick="sKey('6')">6</button>
+    <button class="key sm op" onclick="sKey('×')">×</button>
+    <button class="key sm op" onclick="sKey('-')">−</button>
+    <button class="key sm" onclick="sKey('1')">1</button>
+    <button class="key sm" onclick="sKey('2')">2</button>
+    <button class="key sm" onclick="sKey('3')">3</button>
+    <button class="key sm op" onclick="sKey('+')">+</button>
+    <button class="key sm eq" onclick="sCalc()" style="grid-row:span 2">=</button>
+    <button class="key sm" style="grid-column:span 2" onclick="sKey('0')">0</button>
+    <button class="key sm" onclick="sKey('.')">.</button>
+    <button class="key sm fn" onclick="sKey('Math.PI*')">π×</button>
+  </div>
+</div>
+</div>
+
+<div class="panel" id="panel-conversao">
+<div class="conv-wrap">
+  <div class="section-title">Selecione a categoria</div>
+  <div class="conv-categories" id="conv-cats"></div>
+  <div class="conv-box">
+    <div class="conv-row">
+      <div class="conv-field">
+        <label>Valor</label>
+        <input class="conv-input" type="number" id="conv-in" oninput="doConvert()" placeholder="0">
+        <select class="conv-select" id="conv-from" onchange="doConvert()"></select>
+      </div>
+      <button class="swap-btn" onclick="swapConv()" title="Inverter">
+        <svg class="svg-icon" viewBox="0 0 24 24">
+          <polyline points="17 1 21 5 17 9"></polyline>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+          <polyline points="7 23 3 19 7 15"></polyline>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+        </svg>
+      </button>
+      <div class="conv-field">
+        <label>Resultado</label>
+        <input class="conv-input" type="number" id="conv-out" oninput="doConvertReverse()" placeholder="0">
+        <select class="conv-select" id="conv-to" onchange="doConvert()"></select>
+      </div>
+    </div>
+    <div class="conv-formula" id="conv-formula"></div>
+  </div>
+</div>
+</div>
+
+<div class="panel" id="panel-equacoes">
+<div class="eq-wrap">
+  
+  <div class="builder-box">
+    <div class="section-title" style="color:var(--accent2); border:none; margin-bottom:1rem; font-size:0.9rem;">
+      <svg class="svg-icon" viewBox="0 0 24 24" style="margin-right:0.4rem; width:1.3rem; height:1.3rem;">
+        <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"></path>
+      </svg>
+      Novo Construtor de Fórmulas
+    </div>
+    
+    <div class="b-step">
+      <div class="b-step-title">1. Informações Básicas</div>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+        <div class="eq-input-group" style="flex:2; min-width:200px;">
+          <label>Nome da Fórmula</label>
+          <input type="text" id="b-name" placeholder="Ex: Energia de Einstein">
+        </div>
+        <div class="eq-input-group" style="flex:1; min-width:150px;">
+          <label>Categoria</label>
+          <select id="b-cat">
+            <option value="Personalizadas">Personalizadas</option>
+            <option value="Física">Física</option>
+            <option value="Matemática">Matemática</option>
+            <option value="Química">Química</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="b-step">
+      <div class="b-step-title">2. Quais variáveis você vai usar?</div>
+      <div class="b-var-creation">
+        <div class="eq-input-group" style="flex:1; min-width:100px;">
+          <label>Símbolo (ex: x)</label>
+          <input type="text" id="b-var-sym" placeholder="m">
+        </div>
+        <div class="eq-input-group" style="flex:2; min-width:150px;">
+          <label>Nome (ex: Massa)</label>
+          <input type="text" id="b-var-lbl" placeholder="Massa (kg)">
+        </div>
+        <button class="eq-calc-btn" onclick="addBuilderVar()" style="margin-top:0; padding:0.6rem 1.2rem; align-self:flex-end;">Adicionar</button>
+      </div>
+      <div class="b-var-list" id="b-var-list">
+        <span style="color:var(--muted); font-size:0.8rem; font-family:'Space Mono',monospace;">Nenhuma variável criada ainda.</span>
+      </div>
+    </div>
+
+    <div class="b-step" style="margin-bottom:0; border-bottom-left-radius:0; border-bottom-right-radius:0; border-bottom:none;">
+      <div class="b-step-title">3. Digite ou monte a Equação</div>
+      
+      <div class="b-display-wrap">
+        <input type="text" id="b-display-input" class="b-display-input" placeholder="Clique aqui e digite a fórmula..." autocomplete="off">
+      </div>
+
+      <div class="b-keypad">
+        <button class="func" onclick="bInsert('Math.sin(')">sin(</button>
+        <button class="func" onclick="bInsert('Math.cos(')">cos(</button>
+        <button class="func" onclick="bInsert('Math.tan(')">tan(</button>
+        <button onclick="bInsert('(')">(</button>
+        <button onclick="bInsert(')')">)</button>
+        <button class="op" onclick="bInsert('/')">÷</button>
+        
+        <button onclick="bInsert('7')">7</button>
+        <button onclick="bInsert('8')">8</button>
+        <button onclick="bInsert('9')">9</button>
+        <button class="func" onclick="bInsert('Math.sqrt(')">√</button>
+        <button class="func" onclick="bInsert('**2')">x²</button>
+        <button class="op" onclick="bInsert('*')">×</button>
+
+        <button onclick="bInsert('4')">4</button>
+        <button onclick="bInsert('5')">5</button>
+        <button onclick="bInsert('6')">6</button>
+        <button class="func" onclick="bInsert('Math.log10(')">log(</button>
+        <button class="func" onclick="bInsert('**')">^</button>
+        <button class="op" onclick="bInsert('-')">-</button>
+
+        <button onclick="bInsert('1')">1</button>
+        <button onclick="bInsert('2')">2</button>
+        <button onclick="bInsert('3')">3</button>
+        <button class="func" onclick="bInsert('Math.PI')">π</button>
+        <button onclick="bInsert('Math.E')">e</button>
+        <button class="op" onclick="bInsert('+')">+</button>
+
+        <button onclick="bInsert('0')" style="grid-column:span 3;">0</button>
+        <button onclick="bInsert('.')">.</button>
+        <button onclick="bClear()" style="grid-column:span 2; color:var(--red);">Limpar</button>
+      </div>
+    </div>
+    
+    <button class="eq-calc-btn" onclick="saveBuiltEquation()" style="width:100%; padding:1rem; background:var(--green); color:#000; font-size:1.05rem; border-top-left-radius:0; border-top-right-radius:0;">
+      <svg class="svg-icon" viewBox="0 0 24 24" style="margin-right:0.4rem;">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      Salvar Fórmula Pronta
+    </button>
+  </div>
+
+  <div class="section-title">Minhas Fórmulas</div>
+  <div class="eq-categories" id="eq-cats"></div>
+  <div class="eq-list" id="eq-list"></div>
+</div>
+</div>
+
+</div><script>
+/* ════════════════ LOCAL STORAGE UTILS ════════════════ */
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function loadLS(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
+
+/* ════════════════════════════════════
+   CALCULADORA COMUM E CIENTÍFICA
+════════════════════════════════════ */
+let cExpr='', cJustCalc=false;
+function cKey(v){
+  if(cJustCalc && v.match(/[0-9.]/)){cExpr='';cJustCalc=false;}
+  else if(cJustCalc){cJustCalc=false;}
+  cExpr+=v;
+  document.getElementById('c-result').textContent=cExpr||'0';
+  document.getElementById('c-result').className='result'+(cExpr.length>14?' big':'');
+  document.getElementById('c-expr').textContent='';
+}
+function cClear(){cExpr='';document.getElementById('c-result').textContent='0';document.getElementById('c-expr').textContent='';}
+function cToggleSign(){if(cExpr&&!cExpr.startsWith('-'))cExpr='-'+cExpr;else cExpr=cExpr.slice(1);}
+function cCalc(){
+  try{
+    let ex=cExpr.replace(/÷/g,'/').replace(/×/g,'*');
+    ex=ex.replace(/[+\-*/]$/,'');
+    let opens=(ex.match(/\(/g)||[]).length-(ex.match(/\)/g)||[]).length;
+    ex+=')'.repeat(opens<0?0:opens);
+    let res=Function('"use strict";return ('+ex+')')();
+    document.getElementById('c-expr').textContent=cExpr+' =';
+    let disp=+res.toFixed(10)+'';
+    document.getElementById('c-result').textContent=disp;
+    document.getElementById('c-result').className='result'+(disp.length>14?' big':'');
+    cExpr=disp; cJustCalc=true;
+  }catch(e){document.getElementById('c-result').textContent='Erro';}
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('panel-comum').classList.contains('active')){
+    if(e.key>='0'&&e.key<='9'||e.key==='.')cKey(e.key);
+    if(e.key==='+'||e.key==='-')cKey(e.key);
+    if(e.key==='*')cKey('×');
+    if(e.key==='/')cKey('÷');
+    if(e.key==='Enter'||e.key==='=')cCalc();
+    if(e.key==='Escape')cClear();
+  }
+});
+
+let sExpr='', sRad=false, sJustCalc=false;
+Math.factorial=n=>{if(n<0)return NaN;if(n===0||n===1)return 1;let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function sKey(v){
+  if(sJustCalc&&v.match(/^[0-9.]/)){sExpr='';sJustCalc=false;}
+  else if(sJustCalc){sJustCalc=false;}
+  sExpr+=v;
+  document.getElementById('s-result').textContent=sExpr||'0';
+  document.getElementById('s-expr').textContent='';
+}
+function sDel(){sExpr=sExpr.slice(0,-1);document.getElementById('s-result').textContent=sExpr||'0';}
+function sClear(){sExpr='';document.getElementById('s-result').textContent='0';document.getElementById('s-expr').textContent='';}
+function sToggleRad(){sRad=!sRad;document.getElementById('rad-btn').textContent=sRad?'RAD':'DEG';}
+function sCalc(){
+  try{
+    let ex=sExpr.replace(/÷/g,'/').replace(/×/g,'*');
+    if(!sRad){
+      ex=ex.replace(/Math\.(sin|cos|tan)\(/g,(m,f)=>`Math.${f}(`);
+      ex=ex.replace(/Math\.(sin|cos|tan)\(([^)]+)\)/g,(m,f,v)=>`Math.${f}(${v}*Math.PI/180)`);
+    }
+    let opens=(ex.match(/\(/g)||[]).length-(ex.match(/\)/g)||[]).length;
+    ex+=')'.repeat(opens<0?0:opens);
+    let res=Function('"use strict";return ('+ex+')')();
+    document.getElementById('s-expr').textContent=sExpr+' =';
+    let disp=+res.toFixed(10)+'';
+    document.getElementById('s-result').textContent=disp;
+    sExpr=disp; sJustCalc=true;
+  }catch(e){document.getElementById('s-result').textContent='Erro';}
+}
+
+/* ════════════════════════════════════
+   CONVERSÃO
+════════════════════════════════════ */
+const convData={
+  'Comprimento':{units:{m:1,km:1e-3,cm:100,mm:1000,mi:6.2137e-4,yd:1.0936,ft:3.2808,in:39.3701,nm:1e9,pm:1e12,'µm':1e6,'nautico':5.3996e-4},label:'metro (m)'},
+  'Massa':{units:{kg:1,g:1000,mg:1e6,t:1e-3,lb:2.20462,oz:35.274,st:0.157473,'µg':1e9,carat:5000},label:'quilograma (kg)'},
+  'Temperatura':{special:true,units:['°C','°F','K','°R'],label:'°C'},
+  'Velocidade':{units:{'m/s':1,'km/h':3.6,'mi/h':2.23694,'nó':1.94384,'ft/s':3.28084,'Mach':0.00293},label:'m/s'},
+  'Área':{units:{'m²':1,'km²':1e-6,'cm²':1e4,'mm²':1e6,'ha':1e-4,'acre':2.47105e-4,'ft²':10.7639,'in²':1550.0031,'mi²':3.861e-7},label:'m²'},
+  'Volume':{units:{'m³':1,'L':1000,'mL':1e6,'cm³':1e6,'ft³':35.3147,'in³':61023.7,'gal(US)':264.172,'fl oz(US)':33814,'tbsp':67628,'tsp':202884,'xíc':4226.75},label:'m³'},
+  'Tempo':{units:{s:1,ms:1000,min:1/60,h:1/3600,d:1/86400,sem:1/604800,mes:1/2.628e6,ano:1/3.154e7,ns:1e9,'µs':1e6},label:'segundo (s)'},
+  'Força':{units:{N:1,kN:1e-3,lbf:0.224809,kgf:0.101972,dyn:1e5},label:'Newton (N)'},
+  'Pressão':{units:{Pa:1,kPa:1e-3,MPa:1e-6,bar:1e-5,atm:9.8692e-6,psi:1.45038e-4,mmHg:7.50062e-3,torr:7.50062e-3},label:'Pascal (Pa)'},
+  'Energia':{units:{J:1,kJ:1e-3,MJ:1e-6,cal:0.239006,kcal:2.39006e-4,Wh:2.77778e-4,kWh:2.77778e-7,'ft·lbf':0.737562,BTU:9.47817e-4},label:'Joule (J)'},
+  'Potência':{units:{W:1,kW:1e-3,MW:1e-6,hp:1.34102e-3,'ft·lbf/s':0.737562,'kcal/h':0.859845},label:'Watt (W)'},
+  'Ângulo':{units:{rad:1,'°':180/Math.PI,grad:200/Math.PI,"'":10800/Math.PI,'"':648000/Math.PI,rev:1/(2*Math.PI)},label:'radiano (rad)'},
+  'Frequência':{units:{Hz:1,kHz:1e-3,MHz:1e-6,GHz:1e-9,rpm:60,rps:1},label:'Hertz (Hz)'},
+  'Armazenamento':{units:{B:1,KB:1/1024,MB:1/1048576,GB:1/1073741824,TB:1/1.1e12,bit:8},label:'Byte (B)'},
+  'Luminosidade':{units:{lm:1,lx:1,cd:1,fc:1/10.764},label:'lúmen (lm)'},
+  'Concentração':{units:{'g/L':1,'mg/L':1000,'kg/m³':1,'ppm':1000,'%':0.1},label:'g/L'},
+  'Densidade':{units:{'kg/m³':1,'g/cm³':1e-3,'g/mL':1e-3,'lb/ft³':0.0624279,'lb/in³':3.6127e-5},label:'kg/m³'},
+  'Fluxo':{units:{'m³/s':1,'L/s':1000,'m³/h':3600,'L/h':3.6e6,'gal/min(US)':15850.3,'ft³/min':2118.88},label:'m³/s'},
+  'Tensão':{units:{V:1,mV:1000,kV:1e-3,MV:1e-6,'µV':1e6},label:'Volt (V)'},
+  'Corrente':{units:{A:1,mA:1000,kA:1e-3,'µA':1e6,nA:1e9},label:'Ampere (A)'},
+  'Resistência':{units:{'Ω':1,'kΩ':1e-3,'MΩ':1e-6,'mΩ':1000},label:'Ohm (Ω)'},
+  'Capacitância':{units:{F:1,mF:1e3,'µF':1e6,nF:1e9,pF:1e12},label:'Farad (F)'},
+  'Indutância':{units:{H:1,mH:1000,'µH':1e6,nH:1e9},label:'Henry (H)'},
+  'Combustível':{units:{'km/L':1,'L/100km':-1,'mpg(US)':2.35215,'mpg(UK)':2.82481},label:'km/L'},
+  'Resolução':{units:{PPI:1,PPC:0.3937,DPI:1},label:'PPI'},
+};
+const convCats=Object.keys(convData);
+let currentCat=convCats[0];
+function initConv(){
+  const catsEl=document.getElementById('conv-cats');
+  convCats.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='conv-cat'+(c===currentCat?' active':'');
+    b.textContent=c;
+    b.onclick=()=>{currentCat=c;document.querySelectorAll('.conv-cat').forEach(x=>x.classList.remove('active'));b.classList.add('active');populateSelects();};
+    catsEl.appendChild(b);
+  });
+  populateSelects();
+}
+function populateSelects(){
+  const cat=convData[currentCat];
+  const units=cat.special?cat.units:Object.keys(cat.units);
+  ['conv-from','conv-to'].forEach((id,i)=>{
+    const sel=document.getElementById(id);
+    sel.innerHTML='';
+    units.forEach((u,j)=>{
+      const o=document.createElement('option');o.value=u;o.textContent=u;
+      if(i===0&&j===0)o.selected=true;
+      if(i===1&&j===1)o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+  document.getElementById('conv-in').value='';
+  document.getElementById('conv-out').value='';
+  document.getElementById('conv-formula').textContent='';
+}
+function convertValue(val,from,to,cat){
+  const d=convData[cat];
+  if(d.special){
+    let c;
+    if(from==='°C')c=val;
+    else if(from==='°F')c=(val-32)*5/9;
+    else if(from==='K')c=val-273.15;
+    else if(from==='°R')c=(val-491.67)*5/9;
+    if(to==='°C')return c;
+    if(to==='°F')return c*9/5+32;
+    if(to==='K')return c+273.15;
+    if(to==='°R')return (c+273.15)*9/5;
+  }
+  if(cat==='Combustível'){
+    if(from==='L/100km'||to==='L/100km'){
+      if(from==='L/100km'&&to==='km/L')return 100/val;
+      if(from==='km/L'&&to==='L/100km')return 100/val;
+      return val;
+    }
+  }
+  const base=val/d.units[from];
+  return base*d.units[to];
+}
+function doConvert(){
+  const v=parseFloat(document.getElementById('conv-in').value);
+  const from=document.getElementById('conv-from').value;
+  const to=document.getElementById('conv-to').value;
+  if(isNaN(v)){document.getElementById('conv-out').value='';return;}
+  const res=convertValue(v,from,to,currentCat);
+  document.getElementById('conv-out').value=+res.toFixed(8);
+  document.getElementById('conv-formula').textContent=`${v} ${from} = ${+res.toFixed(8)} ${to}`;
+}
+function doConvertReverse(){
+  const v=parseFloat(document.getElementById('conv-out').value);
+  const from=document.getElementById('conv-to').value;
+  const to=document.getElementById('conv-from').value;
+  if(isNaN(v)){document.getElementById('conv-in').value='';return;}
+  const res=convertValue(v,from,to,currentCat);
+  document.getElementById('conv-in').value=+res.toFixed(8);
+  document.getElementById('conv-formula').textContent=`${v} ${from} = ${+res.toFixed(8)} ${to}`;
+}
+function swapConv(){
+  const f=document.getElementById('conv-from');
+  const t=document.getElementById('conv-to');
+  const tmp=f.value;f.value=t.value;t.value=tmp;
+  doConvert();
+}
+
+/* ════════════════════════════════════
+   CONSTRUTOR E EQUAÇÕES
+════════════════════════════════════ */
+let eqData={};
+let curEqCat='Personalizadas';
+let builderVars = []; 
+
+function bInsert(val) {
+  const input = document.getElementById('b-display-input');
+  input.focus();
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  const text = input.value;
+  input.value = text.substring(0, start) + val + text.substring(end);
+  input.selectionStart = input.selectionEnd = start + val.length;
+}
+
+function bClear() {
+  const input = document.getElementById('b-display-input');
+  input.value = '';
+  input.focus();
+}
+
+function addBuilderVar() {
+  const sym = document.getElementById('b-var-sym').value.trim();
+  const lbl = document.getElementById('b-var-lbl').value.trim();
+  
+  if(!sym) { alert('Digite um símbolo para a variável (ex: x, m, v).'); return; }
+  if(!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(sym)) {
+    alert('O símbolo da variável deve conter apenas letras e números, sem espaços e não pode começar com número.');
+    return;
+  }
+  if(builderVars.find(v => v.id === sym)) {
+    alert('Você já adicionou uma variável com esse símbolo.');
+    return;
+  }
+  
+  builderVars.push({ id: sym, label: lbl || sym });
+  document.getElementById('b-var-sym').value = '';
+  document.getElementById('b-var-lbl').value = '';
+  renderBuilderVars();
+}
+
+function renderBuilderVars() {
+  const c = document.getElementById('b-var-list');
+  c.innerHTML = '';
+  if(builderVars.length === 0) {
+    c.innerHTML = '<span style="color:var(--muted); font-size:0.8rem; font-family:\'Space Mono\',monospace;">Nenhuma variável criada ainda.</span>';
+    return;
+  }
+  
+  builderVars.forEach((v, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'var-pill-wrap';
+    
+    const btn = document.createElement('button');
+    btn.className = 'var-pill';
+    btn.textContent = `[ ${v.id} ]`;
+    btn.title = `Adicionar ${v.label} à fórmula`;
+    btn.onclick = () => bInsert(v.id);
+    
+    const delBtn = document.createElement('button');
+    delBtn.className = 'var-pill-del';
+    delBtn.textContent = '✕';
+    delBtn.title = `Excluir variável`;
+    delBtn.onclick = () => {
+      builderVars.splice(idx, 1);
+      renderBuilderVars();
+    };
+    
+    wrap.appendChild(btn);
+    wrap.appendChild(delBtn);
+    c.appendChild(wrap);
+  });
+}
+
+function saveBuiltEquation() {
+  const name = document.getElementById('b-name').value.trim();
+  const cat = document.getElementById('b-cat').value;
+  const expr = document.getElementById('b-display-input').value.trim();
+  
+  if(!name) { alert('Dê um nome para a sua fórmula no Passo 1!'); return; }
+  if(!expr) { alert('A equação está vazia no Passo 3. Digite ou monte-a.'); return; }
+  if(builderVars.length === 0) { 
+    if(!confirm('Você não criou nenhuma variável no Passo 2. Esta fórmula será apenas um cálculo estático. Deseja continuar?')) return;
+  }
+  
+  const varsArray = builderVars.map(v => ({ id: v.id, label: v.label }));
+  
+  const newEq = {
+    name: name,
+    formula: expr,
+    expr: expr,
+    vars: varsArray,
+    category: cat,
+    custom: true,
+    id: Date.now()
+  };
+  
+  let customEqs = loadLS('suite_custom_equations', []);
+  customEqs.push(newEq);
+  saveLS('suite_custom_equations', customEqs);
+  
+  document.getElementById('b-name').value = '';
+  document.getElementById('b-display-input').value = '';
+  builderVars = [];
+  renderBuilderVars();
+  
+  curEqCat = cat;
+  initEq();
+  
+  document.getElementById('eq-list').scrollIntoView({ behavior: 'smooth' });
+}
+
+function initEqData() {
+  const baseEqData={
+    'Física':[
+      {name:'Velocidade Média',formula:'v = Δs / Δt',vars:[{id:'ds',label:'Distância Δs (m)'},{id:'dt',label:'Tempo Δt (s)'}],
+       calc:({ds,dt})=>`v = ${ds/dt} m/s`},
+      {name:'2ª Lei de Newton',formula:'F = m × a',vars:[{id:'m',label:'Massa m (kg)'},{id:'a',label:'Aceleração a (m/s²)'}],
+       calc:({m,a})=>`F = ${m*a} N`},
+      {name:'Energia Cinética',formula:'Ec = ½mv²',vars:[{id:'m',label:'Massa m (kg)'},{id:'v',label:'Velocidade v (m/s)'}],
+       calc:({m,v})=>`Ec = ${0.5*m*v*v} J`},
+      {name:'Energia Potencial',formula:'Ep = mgh',vars:[{id:'m',label:'Massa m (kg)'},{id:'g',label:'g (m/s²)',def:'9.81'},{id:'h',label:'Altura h (m)'}],
+       calc:({m,g,h})=>`Ep = ${m*g*h} J`},
+      {name:'Trabalho',formula:'W = F × d × cos(θ)',vars:[{id:'F',label:'Força F (N)'},{id:'d',label:'Distância d (m)'},{id:'theta',label:'Ângulo θ (°)',def:'0'}],
+       calc:({F,d,theta})=>`W = ${F*d*Math.cos(theta*Math.PI/180)} J`},
+      {name:'Lei de Ohm',formula:'V = I × R',vars:[{id:'I',label:'Corrente I (A)'},{id:'R',label:'Resistência R (Ω)'}],
+       calc:({I,R})=>`V = ${I*R} V`},
+      {name:'Potência Elétrica',formula:'P = V × I',vars:[{id:'V',label:'Tensão V (V)'},{id:'I',label:'Corrente I (A)'}],
+       calc:({V,I})=>`P = ${V*I} W`},
+      {name:'Queda Livre',formula:'h = ½gt²',vars:[{id:'g',label:'g (m/s²)',def:'9.81'},{id:'t',label:'Tempo t (s)'}],
+       calc:({g,t})=>`h = ${0.5*g*t*t} m`},
+      {name:'Pressão',formula:'P = F / A',vars:[{id:'F',label:'Força F (N)'},{id:'A',label:'Área A (m²)'}],
+       calc:({F,A})=>`P = ${F/A} Pa`},
+      {name:'Densidade',formula:'ρ = m / V',vars:[{id:'m',label:'Massa m (kg)'},{id:'V',label:'Volume V (m³)'}],
+       calc:({m,V})=>`ρ = ${m/V} kg/m³`},
+    ],
+    'Matemática':[
+      {name:'Área do Círculo',formula:'A = π r²',vars:[{id:'r',label:'Raio r'}],
+       calc:({r})=>`A = ${Math.PI*r*r}`},
+      {name:'Bhaskara (ax²+bx+c=0)',formula:'x = (-b ± √(b²-4ac)) / 2a',vars:[{id:'a',label:'a'},{id:'b',label:'b'},{id:'c',label:'c'}],
+       calc:({a,b,c})=>{let d=b*b-4*a*c;if(d<0)return 'Δ < 0 (sem raízes reais)';return `x₁=${(-b+Math.sqrt(d))/(2*a)} | x₂=${(-b-Math.sqrt(d))/(2*a)}`;}},
+      {name:'Teorema de Pitágoras',formula:'c = √(a² + b²)',vars:[{id:'a',label:'Cateto a'},{id:'b',label:'Cateto b'}],
+       calc:({a,b})=>`c = ${Math.sqrt(a*a+b*b)}`},
+      {name:'Juros Simples',formula:'J = P × i × t',vars:[{id:'P',label:'Principal P (R$)'},{id:'i',label:'Taxa i (decimal, ex: 0.05)'},{id:'t',label:'Tempo t (períodos)'}],
+       calc:({P,i,t})=>`J = R$ ${(P*i*t).toFixed(2)} | Total = R$ ${(P*(1+i*t)).toFixed(2)}`},
+      {name:'Juros Compostos',formula:'M = P(1+i)^t',vars:[{id:'P',label:'Principal P (R$)'},{id:'i',label:'Taxa i (decimal)'},{id:'t',label:'Tempo t (períodos)'}],
+       calc:({P,i,t})=>`M = R$ ${(P*Math.pow(1+i,t)).toFixed(2)} | Juros = R$ ${(P*Math.pow(1+i,t)-P).toFixed(2)}`},
+      {name:'Volume da Esfera',formula:'V = (4/3)πr³',vars:[{id:'r',label:'Raio r'}],
+       calc:({r})=>`V = ${(4/3*Math.PI*r*r*r).toFixed(6)}`},
+      {name:'Volume do Cilindro',formula:'V = πr²h',vars:[{id:'r',label:'Raio r'},{id:'h',label:'Altura h'}],
+       calc:({r,h})=>`V = ${(Math.PI*r*r*h).toFixed(6)}`},
+      {name:'Progressão Aritmética (Sn)',formula:'Sn = n(a1+an)/2',vars:[{id:'n',label:'n (termos)'},{id:'a1',label:'a₁ (1º termo)'},{id:'an',label:'aₙ (último termo)'}],
+       calc:({n,a1,an})=>`Sn = ${n*(a1+an)/2}`},
+      {name:'Progressão Geométrica (Sn)',formula:'Sn = a1(qⁿ-1)/(q-1)',vars:[{id:'a1',label:'a₁'},{id:'q',label:'q (razão)'},{id:'n',label:'n (termos)'}],
+       calc:({a1,q,n})=>q===1?`Sn = ${a1*n}`:`Sn = ${a1*(Math.pow(q,n)-1)/(q-1)}`},
+      {name:'Permutação',formula:'P(n,r) = n!/(n-r)!',vars:[{id:'n',label:'n'},{id:'r',label:'r'}],
+       calc:({n,r})=>{const f=x=>{let r=1;for(let i=2;i<=x;i++)r*=i;return r;};return `P(${n},${r}) = ${f(n)/f(n-r)}`;}},
+    ],
+    'Química':[
+      {name:'Lei dos Gases Ideais',formula:'PV = nRT',vars:[{id:'n',label:'n (mol)'},{id:'T',label:'T (K)'},{id:'V',label:'V (L)'}],
+       calc:({n,T,V})=>`P = ${(n*0.0821*T/V).toFixed(4)} atm`},
+      {name:'Concentração Molar',formula:'C = n / V',vars:[{id:'n',label:'n (mol)'},{id:'V',label:'V (L)'}],
+       calc:({n,V})=>`C = ${n/V} mol/L`},
+      {name:'Diluição',formula:'C₁V₁ = C₂V₂',vars:[{id:'C1',label:'C₁'},{id:'V1',label:'V₁ (L)'},{id:'V2',label:'V₂ (L)'}],
+       calc:({C1,V1,V2})=>`C₂ = ${(C1*V1/V2).toFixed(4)}`},
+      {name:'pH',formula:'pH = -log[H⁺]',vars:[{id:'H',label:'[H⁺] (mol/L)'}],
+       calc:({H})=>`pH = ${(-Math.log10(H)).toFixed(2)}`},
+    ],
+    'Personalizadas': []
+  };
+
+  eqData = baseEqData;
+  let customEqs = loadLS('suite_custom_equations', []);
+  customEqs.forEach(eq => {
+    if (!eqData[eq.category]) eqData[eq.category] = [];
+    eqData[eq.category].push(eq);
+  });
+}
+
+function initEqCategories() {
+  const catsEl=document.getElementById('eq-cats');
+  catsEl.innerHTML = '';
+  const eqCats=Object.keys(eqData);
+  if(!curEqCat || !eqCats.includes(curEqCat)) curEqCat=eqCats[0];
+  
+  eqCats.forEach(c=>{
+    if (eqData[c].length === 0 && c !== 'Personalizadas') return;
+    const b=document.createElement('button');
+    b.className='conv-cat'+(c===curEqCat?' active':'');
+    b.textContent=c;
+    b.onclick=()=>{
+      curEqCat=c;
+      document.querySelectorAll('#eq-cats .conv-cat').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      renderEqs();
+    };
+    catsEl.appendChild(b);
+  });
+}
+
+function renderEqs(){
+  const list=document.getElementById('eq-list');list.innerHTML='';
+  if (!eqData[curEqCat] || eqData[curEqCat].length === 0) {
+    list.innerHTML = `<div style="color:var(--muted); font-size:.85rem; padding: 1rem 0;">Nenhuma fórmula cadastrada nesta categoria.</div>`;
+    return;
+  }
+  
+  eqData[curEqCat].forEach((eq,idx)=>{
+    const card=document.createElement('div');card.className='eq-card';card.id='eq-'+idx;
+    const vars=eq.vars.map(v=>`<div class="eq-input-group"><label>${v.label}</label><input type="number" id="eqv-${idx}-${v.id}" placeholder="0" value="${v.def||''}" step="any"></div>`).join('');
+    
+    const delBtn = eq.custom ? `<button onclick="event.stopPropagation(); deleteEq(${idx})" style="background:none; border:none; color:var(--red); cursor:pointer; margin-left:1rem;" title="Excluir Fórmula"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : '';
+    
+    card.innerHTML=`
+      <div class="eq-header" onclick="toggleEq(${idx})">
+        <div style="flex: 1; min-width: 0;">
+          <div class="eq-name">${eq.name}</div>
+          <div class="eq-formula">${eq.formula}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
+          <div class="eq-chevron">▼</div>
+          ${delBtn}
+        </div>
+      </div>
+      <div class="eq-body">
+        <div class="eq-inputs">${vars}</div>
+        <button class="eq-calc-btn" onclick="calcEq(${idx})">Calcular</button>
+        <div class="eq-result" id="eq-res-${idx}" style="display:none"></div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function toggleEq(idx){const c=document.getElementById('eq-'+idx);c.classList.toggle('open');}
+
+function calcEq(idx){
+  const eq=eqData[curEqCat][idx];
+  const vals={};
+  eq.vars.forEach(v=>{
+    vals[v.id]=parseFloat(document.getElementById(``+`eqv-${idx}-${v.id}`).value);
+    if(isNaN(vals[v.id])) vals[v.id] = 0;
+  });
+  
+  let res;
+  if (eq.custom) {
+    try {
+      const paramNames = Object.keys(vals);
+      const paramValues = Object.values(vals);
+      const fn = new Function(...paramNames, `return (${eq.expr});`);
+      const calculatedValue = fn(...paramValues);
+      res = `Resultado: ${calculatedValue}`;
+    } catch(e) {
+      res = `Erro na execução: Revise os operadores usados na fórmula.`;
+    }
+  } else {
+    res = eq.calc(vals);
+  }
+  
+  const r=document.getElementById('eq-res-'+idx);r.textContent=res;r.style.display='block';
+}
+
+function deleteEq(idx) {
+  const eq = eqData[curEqCat][idx];
+  if (!eq.custom) return;
+  
+  if(confirm(`Deseja realmente excluir a fórmula "${eq.name}"?`)) {
+    let customEqs = loadLS('suite_custom_equations', []);
+    customEqs = customEqs.filter(item => item.id !== eq.id);
+    saveLS('suite_custom_equations', customEqs);
+    initEq();
+  }
+}
+
+function initEq() {
+  initEqData();
+  initEqCategories();
+  renderEqs();
+}
+
+/* ════════════════════════════════════
+   TAB SWITCHING
+════════════════════════════════════ */
+function switchPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// INICIALIZAÇÃO
+initConv();
+initEq();
+</script>
+</body>
+</html>
