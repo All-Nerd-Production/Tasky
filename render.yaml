@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: tasky-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # você vai preencher no painel do Render
+      - key: SECRET_KEY
+        generateValue: true  # Render gera automaticamente
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: FRONTEND_URL
+        sync: false          # URL do seu frontend (preenchida depois)
+      - key: DEBUG
+        value: "false"
+    healthCheckPath: /api/health
+
+  - type: web
+    name: tasky-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false          # URL do backend no Render (preenchida depois)
