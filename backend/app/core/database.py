@@ -1,20 +1,25 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
-import urllib.parse
+import os
+import re
 
-DATABASE_URL = settings.DATABASE_URL
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# Pega a URL e limpa parâmetros incompatíveis com psycopg2
+raw_url = os.environ.get("DATABASE_URL", "")
+
+# Troca postgres:// por postgresql://
+if raw_url.startswith("postgres://"):
+    raw_url = raw_url.replace("postgres://", "postgresql://", 1)
+
+# Remove TODOS os query params (?pgbouncer=true, ?sslmode=require etc)
+# e reconstrói só com sslmode=require
+base_url = raw_url.split("?")[0]
+DATABASE_URL = base_url + "?sslmode=require"
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args={"sslmode": "require"},
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
